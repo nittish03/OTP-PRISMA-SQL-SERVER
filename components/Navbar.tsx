@@ -15,13 +15,14 @@ export default function Navbar() {
   // const [username, setUsername] = useState(" ")
   // const [count, setCount] = useState(0)
   // const [error, setError] = useState("")
-  console.log(session)
+
   const handleLogout = () => {
     signOut();
-    router.push("/login");
+    toast.success("Logged out successfully")
+    router.push("/");
   };
 
-  console.log(session)
+
   return (
     <>
       <nav className="shadow-sm  text-xl shadow-white flex justify-center flex-col items-center py-2 px-2 bg-black text-white font-inter fixed top-0 left-0 w-full z-10 ">

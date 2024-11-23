@@ -2,8 +2,6 @@ import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcryptjs from "bcryptjs";
-import connectDb from "@/mongoDb/connectDb";
-import jwt from 'jsonwebtoken'
 import { PrismaAdapter } from "@auth/prisma-adapter";
 
 import { prismaDB } from "@/lib/prismaDB";
@@ -43,7 +41,7 @@ export const authoptions = NextAuth({
         }
 
         // Convert `id` to a string if required by NextAuth
-        return { ...user, id: user.id.toString() };
+        return { ...user, name: user.name };
       },
       }),    
   GoogleProvider({
