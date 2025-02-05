@@ -1,25 +1,32 @@
 'use client'
-import React,{FormEvent, useState} from 'react'
+import React,{FormEvent, useState,useEffect} from 'react'
 import CustomButton from '@/components/CustomButton';
 import CustomInput from '@/components/CustomInput';
-import { redirect, useRouter } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import { FcGoogle } from "react-icons/fc";
-import { signIn } from 'next-auth/react'
-import { toast } from 'react-hot-toast';
+import { signIn, useSession } from 'next-auth/react'
+import toast from 'react-hot-toast';
+import { useRouter } from "next/navigation";
 
 
 const LoginPage = () => {
+    const {data:session} = useSession();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [showPass, setShowPass] = useState(false);
     const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [showPass, setShowPass] = useState(false);
-
+    
+  useEffect(()=>{
+    if(session){
+        router.push("/")
+    }
+  },[session,router])
 
   const handleClick = () => {
     
-      const loading = toast.loading("Logging in");
-      try {
+    const loading = toast.loading("Logging in");
+    try {
         signIn("google",{callbackUrl: '/'});
         toast.dismiss(loading);
     } catch (error) {
@@ -27,49 +34,52 @@ const LoginPage = () => {
         console.log(error);
         toast.error("Failed to Log in, please try again")
     }
+   
   }
 
   const changeShowStatus = () => {
       setShowPass(!showPass);
   }
-
   const handleSubmit = async(e: FormEvent<HTMLFormElement>) => {
 
 
-    e.preventDefault();
-    if (email === '' || password === '') {
-        setError("Fill all fields!")
-        return;
-    }
-    if (!email.includes("@") || email.length < 5 || !email.includes(".") || email.length > 100) {
-        setError("Invalid email, must include @ and domain part!")
-        return;
-    }
+      e.preventDefault();
+      const loading = toast.loading("Signing in")
+      if (email === '' || password === '') {
+          setError("Fill all fields!")
+          return;
+      }
+      if (!email.includes("@") || email.length < 5 || !email.includes(".") || email.length > 100) {
+          setError("Invalid email, must include @ and domain part!")
+          return;
+      }
+      console.log("email" + email);
+      console.log("password" + email);
+      try {
+        const response =  await signIn(
+              "credentials", {
+                  email,
+                  password,
+                  callbackUrl: "/",
+                  redirect: true
+              }
+          );
+              toast.dismiss(loading)
+              toast.success("Signed in successfully");
 
-    const loading = toast.loading("Signing in")
-    try {
-        await signIn(
-            "credentials", {
-                email,
-                password,
-                callbackUrl: "/",
-                redirect: true
-            }
-        );
+      } catch (error) {
+        toast.dismiss(loading);
+        toast.error("Failed to sign in");
+          console.log(error);
+      }
+      return;
+  }
 
-            toast.dismiss(loading)
-            toast.success("Signed in successfully");
-    } catch (error) {
-      toast.dismiss(loading);
-      toast.error("Failed to sign in");
-        console.log(error);
-    }
-    return;
-}
+
 
   return (
-    <div className='h-fit  overflow-hidden text-white w-screen flex justify-center items-center'>
-      <div className='custom-shadow w-[320px] md:w-[450px] py-5 h-fit mt-4  border rounded-lg flex flex-col items-center justify-around font-sans font-light'>
+    <div className='h-screen w-screen flex justify-center items-center'>
+      <div className='custom-shadow bg-[#404040] w-[320px] md:w-[380px] mt-16 py-5 h-fit border rounded-lg flex flex-col items-center justify-around font-sans font-light'>
           <h1 className='text-2xl tracking-wide'>{"SIGN IN"}</h1>
           <h3 className='text-sm mb-5'>to continue</h3>
           <form onSubmit={handleSubmit} className='w-[80%] flex flex-col items-center justify-center gap-8'>
@@ -88,9 +98,9 @@ const LoginPage = () => {
               }
               <CustomButton title={"SIGN IN"} type='submit' />
               <div className='w-full'>
-                  <p className='w-full text-sm flex justify-center items-center'>{"Don't have an account ?"}<span onClick={() => {
+                  <p className='w-full text-sm flex text-custom-neon justify-center items-center'>{"Don't have an account ?"}<span onClick={() => {
                       redirect("/signup")
-                  }} className='text-green-300 ml-1 cursor-pointer'>{"sign up"}</span></p>
+                  }} className='text-custom-neon ml-1 cursor-pointer'>{"sign up"}</span></p>
               </div>
 
           </form>

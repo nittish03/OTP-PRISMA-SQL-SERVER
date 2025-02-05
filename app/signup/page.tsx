@@ -15,104 +15,113 @@ import toast from 'react-hot-toast';
 const SignUpPage = () => {
     const router = useRouter();
     const [otp, setOtp] = useState('');
+    const { data: session } = useSession();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [register,setRegister] = useState(false);
 
   const handleClick = () => {
-      signIn("google", { callbackUrl: "/" })
+    const loading = toast.loading("Signing up")
+      try {
+        toast.dismiss(loading);
+        signIn("google", { callbackUrl: "/" })
+      } catch (error) {
+        console.log(error);
+        toast.dismiss(loading)
+        toast.error("Failed to sign up, please try again!")
+      }
+
   }
 
   const changeShowStatus = () => {
       setShowPass(!showPass);
   }
+  const handleSubmit1 = async (e: FormEvent<HTMLFormElement>) => {
+    const loading = toast.loading("Signing up")
+    e.preventDefault()
+    if (otp.length < 6 || error !== '') {
+      setError("Wrong Inputs! make sure the input is exaclty six digits.")
+      return
+    }
+    try{
+      await axios.post("/api/auth/otp-verification",{email,otp})
+      await signIn(
+        "credentials", {
+        email,
+        password,
+        callbackUrl: "/",
+        redirect: true
+    }
+    )
+    toast.dismiss(loading);
+    toast.success("Signed up successfully")
+    }catch(e){
+      toast.dismiss(loading);
+      toast.error("Failed to sign up, please try again!")
+      console.log(e);
+    }
+
+    console.log(otp);
+    return;
+  }
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (email === '' || password === ''  || username === '') {
-        setError("Fill all fields!")
-        return;
-    }
-    if (!email.includes("@") || email.length < 5 || !email.includes(".") || email.length > 100) {
-        setError("Invalid email, must include @ and domain part!")
-        return;
-    }
-    try {
-        const response = await axios.post("/api/auth/register", { username, email, password });
-        const loading = toast.loading("registering")
-      if(response){
-        toast.dismiss(loading);
-        toast.success("OTP SENT SUCCESSFULLY")
-        setRegister(true);
-      }else {
-        toast.dismiss(loading)
-        toast.error("Signup Failed")
+      e.preventDefault();
+      if (email === '' || password === '' || confirmPassword === '' || username === '') {
+          setError("Fill all fields!")
+          return;
       }
-    } catch (e) {
-        toast.error("Signup failed");
-        console.log(e);
-        setRegister(false);
-    }
-    return;
-}
-const handleOTP = async (e: FormEvent<HTMLFormElement>) => {
-  e.preventDefault()
-  if (otp.length < 6 || error !== '') {
-    setError("Wrong Inputs! make sure the input is exaclty six digits.")
-    return
-  }
-  try{
-    const loading = toast.loading("Signing in")
-    const response = await axios.post("/api/auth/otp-verification",{email,otp})
-      await signIn(
-      "credentials", {
-      email,
-      password,
-      callbackUrl: "/",
-      redirect: true
-  }
-  )
-  console.log(response);
-  if(response){
-    toast.dismiss(loading)
-    toast.success("Signed In successfully");
-    router.push("/login")
-  }else{
-    toast.dismiss(loading);
-    toast.error("Failed to sign in, please try again!")
-  }
-  }catch(e){
-    
-    console.log(e);
+      if (!email.includes("@") || email.length < 5 || !email.includes(".") || email.length > 100) {
+          setError("Invalid email, must include @ and domain part!")
+          return;
+      }
+      if (password !== confirmPassword) {
+          setError("Confirmed Password doesn't match with password!")
+          return;
+      }
+      console.log("name" + name)
+      console.log("email" + email)
+      console.log("password" + password)
+      console.log('confirmPassword' + confirmPassword)
+
+      try {
+          const response = await axios.post("/api/auth/register", { username, email, password });
+          console.log("signup success", response.data);
+        if(response){
+          setRegister(true);
+        }else {
+          toast.error("Signup Failed")
+        }
+      } catch (error) {
+          console.log(error);
+          setRegister(false);
+      }finally{
+        setRegister(true);
+      }
+      return;
   }
 
-  console.log(otp);
-  return;
+  const handleResend= async() => {
+try {
+  const response = await axios.post("/api/auth/resend-otp",{email});
+  console.log(response.data);
+  toast.success("Resend OTP successfully");
+} catch (error) {
+  console.log(error);
 }
-
-const handleResendOTP = async(e:any) =>{
-  e.preventDefault();
-  try{
-    const response = await axios.post("/api/auth/resend-otp",{email})
-    if(response){0
-      toast.success("OTP Resent Successfully")
-    }else{
-      toast.error("Failed to resend OTP")
-    }
-  }catch(e){
-    console.log(e);
   }
-}
+
 
   return (
     !register?
     <>
-    <div className='h-fit w-screen flex justify-center items-center'>
-      <div className='custom-shadow w-[320px] md:w-[450px] mt-5 py-5 h-fit border rounded-lg flex flex-col items-center justify-around font-sans font-light'>
-          <h1 className='text-2xl tracking-wide'>SIGN UP</h1>
+    <div className='h-screen w-screen flex justify-center items-center'>
+      <div className='custom-shadow bg-[#404040] w-[320px] md:w-[400px] mt-16 py-5 h-fit border rounded-lg flex flex-col items-center justify-around font-sans font-light'>
+          <h1 className='text-2xl  tracking-wide'>SIGN UP</h1>
           <h3 className='text-sm mb-5'>to continue</h3>
           <form onSubmit={handleSubmit} className='w-[80%] flex flex-col items-center justify-center gap-4'>
               <CustomInput type='text' placeholder='Name' onChange={(e) => {
@@ -127,15 +136,18 @@ const handleResendOTP = async(e:any) =>{
                   setError('');
                   setPassword(e.target.value)
               }} value={password} />
-
+              <CustomInput type='password' placeholder='Confirm Password' onChange={(e) => {
+                  setError('');
+                  setConfirmPassword(e.target.value)
+              }} value={confirmPassword} />
               {
                   error !== "" && <p className='w-full text-start text-sm text-red-500 my-[-12px]'>{error}</p>
               }
-              <CustomButton title={"SIGN UP"} type='submit' />
+              <CustomButton  title={"SIGN UP"} type='submit' />
               <div className='w-full'>
-                  <p className='w-full text-sm flex justify-center items-center'>{"Already Have an account ? "}<span onClick={() => {
+                  <p className='w-full text-sm flex justify-center text-custom-neon items-center'>{"Already Have an account ? "}<span onClick={() => {
                       return redirect("/login")
-                  }} className='text-green-300 ml-1 cursor-pointer'>{"log in"}</span></p>
+                  }} className='text-custom-neon ml-1 cursor-pointer'>{"log in"}</span></p>
               </div>
           </form>
           <div className='w-[90%] h-[1px] bg-white mt-2'></div>
@@ -153,12 +165,12 @@ const handleResendOTP = async(e:any) =>{
       :
 
 <>
-<div className='h-fit w-screen flex justify-center items-center '>
+<div className='h-screen w-screen flex justify-center items-center '>
 
-<div className='custom-shadow  w-[320px] md:w-[420px] mt-5 py-2 md:py-7 h-fit border rounded-lg flex flex-col bg-custom-bg text-light-gray items-center justify-around font-sans font-light'>
-  <h1 className='text-2xl tracking-wide text-custom-neon'>Sign Up</h1>
+<div className='custom-shadow  w-[320px] md:w-[420px] mt-16 py-7 h-fit border rounded-lg flex flex-col bg-custom-bg text-light-gray items-center justify-around font-sans font-light'>
+  <h1 className='text-2xl tracking-wide text-custom-neon'>{"SIGN IN"}</h1>
   <h3 className='text-sm mb-5'>to continue</h3>
-  <form onSubmit={handleOTP} className='w-[80%] flex flex-col items-center justify-center gap-7'>
+  <form onSubmit={handleSubmit1} className='w-[80%] flex flex-col items-center justify-center gap-7'>
     <div className="flex flex-col text-sm md:text-base text-center justify-center items-start w-full">
       <div>OTP for one time verification sent to</div>
       <div>{email} </div>
@@ -181,12 +193,12 @@ const handleResendOTP = async(e:any) =>{
       </InputOTPGroup>
     </InputOTP>
     <div className="flex justify-start items-start w-full text-sm md:text-base gap-1">
-      <div>Didn't recieve OTP?  </div><button onClick={ handleResendOTP} className="font-aria text-custom-neon cursor-pointer">Send Again</button>
+      <div>Didn't recieve OTP?  </div><button onClick={handleResend} className="font-aria text-custom-neon cursor-pointer">Send Again</button>
     </div>
     {
       error && <p className='w-full text-start text-sm text-red-500 my-[-12px]'>{error}</p>
     }
-    <CustomButton  title={"SIGN IN"}  />
+    <CustomButton title={"SIGN IN"} type='submit' />
     <div className='w-full'>
       <div className='flex'>
   

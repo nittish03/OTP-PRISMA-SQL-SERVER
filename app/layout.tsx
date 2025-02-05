@@ -19,11 +19,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className=" w-screen text-white bg-black font-inter">
+      <body className="h-full text-white bg-black font-inter">
         <SessionWrapper>
           <Navbar />
           <Toaster />
-          <div className="mt-24"></div>
+          <div className="mt-12"></div>
           <main>{children}</main>
         </SessionWrapper>
       </body>
